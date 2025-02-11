@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyCosmo</title>
+  <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      font-size: 16px;
+      width: 100%;
+      text-align: center;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      #app {
+        flex-direction: column;
+      }
+    }
+
+    td {
+      white-space: nowrap;
+      padding: 10px;
+    }
+
+    table {
+      margin: 20px 0;
+      border-collapse: collapse;
+      width: 80%;
+      max-width: 600px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .input {
+      max-width: 300px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+    }
+
+    td input {
+      text-align: center;
+      padding: 8px;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    th {
+      background-color: #f8f8f8;
+    }
+
+    .button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 4px;
+      background-color: #000000;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .button:hover {
+      background-color: #6d6d6d;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .fade-in-enter-active {
+      transition: opacity 300ms cubic-bezier(0.55, 0.085, 0.68, 0.53);
+    }
+
+    .fade-in-leave-active {
+      transition: opacity 225ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .fade-in-enter,
+    .fade-in-leave-to {
+      opacity: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>AstroMy™ Cosmology Calculator</h1>
+  <hr>
+  <div id="app">
+
+    <form @submit.prevent="calculate">
+      <table class="input" border="1">
+
+        <caption>
+          <h2>Input</h2>
+        </caption>
+        <slot />
+        <tr>
+          <td>Flat?</td>
+          <td><input type="checkbox" v-model="UNIVERSE.FLAT"></td>
+        </tr>
+        <tr>
+          <td>H<sub>0</sub></td>
+          <td><input type="text" v-model.number="H0"></td>
+        </tr>
+        <tr>
+          <td>Ω<sub>m</sub></td>
+          <td><input type="text" v-model.number="omegaM"></td>
+        </tr>
+        <tr v-if="!UNIVERSE.FLAT">
+          <td>Ω<sub>Λ</sub></td>
+          <td><input type="text" v-model.number="omegaVac"></td>
+        </tr>
+        <tr>
+          <td>z</td>
+          <td><input type="text" v-model.number="z"></td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <input class="button" type="submit" value="Calculate"></input>
+          </td>
+
+      </table>
+    </form>
+
+    <table class="output" border="1" id="output">
+      <caption>
+        <h2>Output</h2>
+      </caption>
+      <tr>
+        <td colspan="3" style="white-space:normal">
+          H<sub>0</sub>={{H0}} km/s/Mpc,
+          Ω<sub>m</sub>={{omegaM}},
+          Ω<sub>Λ</sub>={{omegaVac.toFixed(3)}},
+          z={{z}}<br>
+          Ω<sub>K</sub>={{omegaK.toExponential(3)}},
+          Ω<sub>R</sub>={{omegaR.toExponential(3)}}
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align:left">Since the Big Bang, it is now</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="AGE">{{AGE}} </div>
+          </Transition>
+        </td>
+        <td>Gyr</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">The age at redshift z was</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="ZAGE">{{ZAGE}}</div>
+          </Transition>
+        </td>
+        <td>{{ZAGE_UNIT}}</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">The light travel time was</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="TIME_AFTER_Z">{{TIME_AFTER_Z}}</div>
+          </Transition>
+        </td>
+        <td>Gyr</td>
+      </tr>
+      <tr>
+        <td style="text-align:left" rowspan="2">The comoving radial distance is</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="COMOVING_R_MPC">{{COMOVING_R_MPC}}</div>
+          </Transition>
+        </td>
+        <td>Mpc</td>
+      </tr>
+      <tr>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="COMOVING_R_GLY">{{COMOVING_R_GLY}}</div>
+          </Transition>
+        </td>
+        <td>Gly</td>
+      </tr>
+      <tr>
+        <td style="text-align:left">The comoving volume within redshift z is</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="COMOVING_V_GPC">{{COMOVING_V_GPC}}</div>
+          </Transition>
+        </td>
+        <td>Gpc<sup>3</sup></td>
+      </tr>
+      <tr>
+        <td style="text-align:left" rowspan="2"> The angular size distance D<sub>A</sub> is</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="DA_MPC">{{DA_MPC}}</div>
+          </Transition>
+        </td>
+        <td>Mpc</td>
+      </tr>
+      <tr>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="DA_GLY">{{DA_GLY}}</div>
+          </Transition>
+        </td>
+        <td>Gly</td>
+      </tr>
+      <tr>
+        <td style="text-align:left"> The angular scale is</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="ANGULAR_SCALE_KPC">{{ANGULAR_SCALE_KPC}}</div>
+          </Transition>
+        </td>
+        <td>kpc/''</td>
+      </tr>
+      <tr>
+        <td rowspan="2" style="text-align:left"> The luminosity distance D<sub>L</sub> is</td>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="DL_MPC">{{DL_MPC}}</div>
+          </Transition>
+        </td>
+        <td>Mpc</td>
+      </tr>
+      <tr>
+        <td>
+          <Transition mode="out-in" name="fade-in">
+            <div :key="DL_GLY">{{DL_GLY}}</div>
+          </Transition>
+        </td>
+        <td>Gly</td>
+      </tr>
+    </table>
+
+  </div>
+  1 Gly = 1,000,000,000 light years or 9.461×10<sup>26</sup> cm.<br>
+  1 Gyr = 1,000,000,000 years.<br>
+  1 Mpc = 1,000,000 parsecs = 3.08568×10<sup>24</sup> cm,
+  or 3,261,566 light years.<br>
+
+  <div class="footer">
+    <hr>
+    Contact: <a href="https://lmytime.com">Mingyu Li</a><br>
+    Mostly Based on <a href="https://astro.ucla.edu/~wright/CosmoCalc.html">Ned Wright's JavaScript Cosmology
+      Calculator</a>.
+  </div>
+
+  <script type="module">
+    const app = Vue.createApp({
+      data() {
+        return {
+          c: 299792.458, // velocity of light in km/sec
+          STEP: 1e-6, //integration step
+          // H0: 69.6,
+          // omegaM: 0.286,
+          // omegaVac: 0.714,
+          // UNIVERSE: {
+          //   FLAT: false
+          // },
+          H0: 70.0,
+          omegaM: 0.3,
+          omegaVac: 0.7,
+          UNIVERSE: {
+            FLAT: true
+          },
+          z: 3,
+
+
+          // intermediate variables
+          omegaK: 0,
+          omegaR: 0,
+          az: 0,
+          timeBeforeZ: 0,
+          timeAfterZ: 0,
+          DComovingRadius: 0,
+          DComovingTangential: 0,
+          VComoving: 0,
+
+          // output
+          AGE: 0,
+          ZAGE: 0,
+          ZAGE_UNIT: '',
+          TIME_AFTER_Z: 0,
+          COMOVING_R_GLY: 0,
+          COMOVING_R_MPC: 0,
+          COMOVING_V_GPC: 0,
+          DA_MPC: 0,
+          DA_GLY: 0,
+          ANGULAR_SCALE_KPC: 0,
+          DL_MPC: 0,
+          DL_GLY: 0
+        }
+      },
+      beforeMount() {
+        const params = new URLSearchParams(window.location.search);
+        const paramsObj = Array.from(params.keys()).reduce(
+          (acc, val) => ({ ...acc, [val]: params.get(val) }),
+          {}
+        );
+        this.z = paramsObj.z ? parseFloat(paramsObj.z) : this.z;
+      },
+      mounted() {
+        this.calculate()
+      },
+      methods: {
+        fh() {
+          return this.H0 / 100
+        },
+        faz() {
+          return 1 / (1 + this.z)
+        },
+        fomegaR() {
+          return 4.165E-5 / (this.h * this.h);	// includes 3 massless neutrino species, T0 = 2.72528
+          // return 0;
+        },
+        fomegaK() {
+          if (this.UNIVERSE.FLAT === false) {
+            return 1 - this.omegaM - this.omegaR - this.omegaVac;
+          } else {
+            this.omegaVac = 1 - this.omegaM - this.omegaR;
+            return 0;
+          }
+        },
+        ftimeBeforeZ() {
+          let t = this.integrate(a => 1 / (a * this.Ea(a)), 0, this.az, this.STEP);
+          return this.ageCorrect(t);
+        },
+        ftimeAfterZ() {
+          let t = this.integrate(a => 1 / (a * this.Ea(a)), this.az, 1, this.STEP);
+          return t;
+        },
+        fDComovingRadius() {
+          return this.integrate(a => 1 / (a * a * this.Ea(a)), this.az, 1, this.STEP);
+        },
+        // tangential comoving distance
+        fDComovingTangential() {
+          let ratio = 1.00, x, y;
+          x = Math.sqrt(Math.abs(this.omegaK)) * this.DComovingRadius;
+          if (x > 0.1) {
+            ratio = (this.omegaK > 0) ? 0.5 * (Math.exp(x) - Math.exp(-x)) / x : Math.sin(x) / x;
+            y = ratio * this.DComovingRadius;
+            return y;
+          };
+          y = x * x;
+          if (this.omegaK < 0) y = -y;
+          ratio = 1 + y / 6 + y * y / 120;
+          y = ratio * this.DComovingRadius;
+          return y;
+        },
+        // comoving volume computation
+        fVComoving() {
+          let ratio = 1.00, x, y;
+          x = Math.sqrt(Math.abs(this.omegaK)) * this.DComovingRadius;
+          if (x > 0.1) {
+            ratio = (this.omegaK > 0) ? (0.125 * (Math.exp(2 * x) - Math.exp(-2 * x)) - x / 2) / (x * x * x / 3) :
+              (x / 2 - Math.sin(2 * x) / 4) / (x * x * x / 3);
+            y = ratio * this.DComovingRadius * this.DComovingRadius * this.DComovingRadius / 3;
+            return y;
+          };
+          y = x * x;
+          if (this.omegaK < 0) y = -y;
+          ratio = 1 + y / 5 + (2 / 105) * y * y;
+          y = ratio * this.DComovingRadius * this.DComovingRadius * this.DComovingRadius / 3;
+          return y;
+        },
+        calculate: function () {
+          this.h = this.fh();
+          this.omegaR = this.fomegaR();
+          this.omegaK = this.fomegaK();
+          this.az = this.faz();
+          this.timeBeforeZ = this.ftimeBeforeZ();
+          this.timeAfterZ = this.ftimeAfterZ();
+          this.DComovingRadius = this.fDComovingRadius();
+          this.DComovingTangential = this.fDComovingTangential();
+          this.VComoving = this.fVComoving();
+
+          console.log(this.H0, this.omegaM, this.omegaVac, this.UNIVERSE.FLAT, this.z);
+          console.log(this.omegaK, this.omegaR, this.az, this.timeBeforeZ, this.timeAfterZ, this.DComovingRadius, this.DComovingTangential, this.VComoving);
+
+          // Universe age
+          let age_Gyr = this.H0InverseToGyr((this.timeBeforeZ + this.timeAfterZ) / this.H0);
+          this.AGE = age_Gyr.toFixed(3);
+
+          // The age at redshift z
+          let zage = this.H0InverseToGyr(this.timeBeforeZ / this.H0);
+          let zageUnit = 'Gyr';
+          if (zage < 0.1) {
+            zageUnit = 'Myr';
+            zage = 1000 * zage;
+          }
+          if (zage < 0.1) {
+            zageUnit = 'kyr';
+            zage = 1000 * zage;
+          }
+          if (zage < 0.1) {
+            zageUnit = 'yr';
+            zage = 1000 * zage;
+          }
+          if (zage < 0.1) {
+            zageUnit = 'sec';
+            zage = 365.25 * 86400 * zage;
+          };
+          this.ZAGE = zage.toFixed(3);
+          this.ZAGE_UNIT = zageUnit;
+
+          // The light travel time
+          this.TIME_AFTER_Z = this.H0InverseToGyr(this.timeAfterZ / this.H0).toFixed(3);
+
+          // The comoving radial distance
+          this.COMOVING_R_GLY = this.H0InverseToGyr(this.DComovingRadius / this.H0).toFixed(3);
+          this.COMOVING_R_MPC = (this.c / this.H0 * this.DComovingRadius).toFixed(1);
+
+          // The comoving volume within redshift z
+          this.COMOVING_V_GPC = (4 * Math.PI * Math.pow(0.001 * this.c / this.H0, 3) * this.VComoving).toFixed(3);
+
+          // The angular size distance
+          // And the angular scale
+          let DA = this.az * this.DComovingTangential;
+          let DA_Mpc = (this.c / this.H0) * DA;
+          this.ANGULAR_SCALE_KPC = (DA_Mpc / 206.264806).toFixed(3);
+          if (DA_Mpc >= 100) {
+            this.DA_MPC = (DA_Mpc).toFixed(1);
+            this.DA_GLY = this.H0InverseToGyr(DA / this.H0).toFixed(4);
+          } else {
+            this.DA_MPC = (DA_Mpc).toFixed(3);
+            this.DA_GLY = this.H0InverseToGyr(DA / this.H0).toFixed(4);
+          }
+
+          // The luminosity distance
+          const DL = DA / (this.az * this.az);
+          this.DL_MPC = (this.c / this.H0 * DL).toFixed(1);
+          this.DL_GLY = this.H0InverseToGyr(DL / this.H0).toFixed(3);
+
+        },
+        integrate: function (f, start, end, step) {
+          let total = 0
+          step = step || 0.01
+          for (let x = start; x < end; x += step) {
+            total += f(x + step / 2) * step
+          }
+          return total
+        },
+        H0InverseToGyr: function (x) {
+          return 977.8123 * x // converting 1/H [km/s/Mpc] into Gyr
+        },
+        Ea: function (a) {
+          return Math.sqrt(this.omegaK / (a * a) + this.omegaM / (a * a * a) + (this.omegaR / (a * a * a * a)) + this.omegaVac)
+        },
+        ageCorrect: function (t) {
+          // correction for annihilations of particles not present now like e+/e-
+          // added 13-Aug-03 based on T_vs_t.f
+          let lpz = Math.log((1 + 1.0 * this.z)) / Math.log(10.0);
+          let dt = 0;
+          if (lpz > 7.500) dt = 0.002 * (lpz - 7.500);
+          if (lpz > 8.000) dt = 0.014 * (lpz - 8.000) + 0.001;
+          if (lpz > 8.500) dt = 0.040 * (lpz - 8.500) + 0.008;
+          if (lpz > 9.000) dt = 0.020 * (lpz - 9.000) + 0.028;
+          if (lpz > 9.500) dt = 0.019 * (lpz - 9.500) + 0.039;
+          if (lpz > 10.000) dt = 0.048;
+          if (lpz > 10.775) dt = 0.035 * (lpz - 10.775) + 0.048;
+          if (lpz > 11.851) dt = 0.069 * (lpz - 11.851) + 0.086;
+          if (lpz > 12.258) dt = 0.461 * (lpz - 12.258) + 0.114;
+          if (lpz > 12.382) dt = 0.024 * (lpz - 12.382) + 0.171;
+          if (lpz > 13.055) dt = 0.013 * (lpz - 13.055) + 0.188;
+          if (lpz > 14.081) dt = 0.013 * (lpz - 14.081) + 0.201;
+          if (lpz > 15.107) dt = 0.214;
+          t = t * Math.pow(10.0, dt);
+          return t;
+        },
+      }
+    })
+
+    app.mount('#app');
+
+  </script>
+</body>
+
+</html>
