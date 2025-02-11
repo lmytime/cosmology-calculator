@@ -1,6 +1,8 @@
 # cosmology-calculator
 One-Page Cosmology Calculator Based on Ned Wright's Old One
 
+<img src="https://github.com/lmytime/cosmology-calculator/blob/main/cc.jpeg?raw=true" style="width:50%"></img>
+
 ## Usage
 Download the [`cosmology-calculator.html`](https://github.com/lmytime/cosmology-calculator/blob/main/cosmology-calculator.html) file and open it.
 
